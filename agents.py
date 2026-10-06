@@ -10,8 +10,8 @@ from state import AgentState
 
 # --- 1. LOAD CLIENTS ---
 load_dotenv()
-gemini_client = genai.Client(api_key=os.getenv("CEO-inbox"))
-groq_client = instructor.from_groq(Groq(api_key=os.getenv("CEO-inbox")))
+gemini_client = genai.Client(api_key=os.getenv("CEO_INBOX_GEMINI"))
+groq_client = instructor.from_groq(Groq(api_key=os.getenv("CEO_INBOX_GROQ")))
 
 # --- 2. PYDANTIC SCHEMAS ---
 class MarketAnalysis(BaseModel):
@@ -26,13 +26,31 @@ class FinanceAnalysis(BaseModel):
     budget_flags: List[str] = Field(description="List of specific financial risks or warnings")
     recommendation: str = Field(description="Strategic financial recommendation")
 
+class OperationsAnalysis(BaseModel):
+    capacity_status: str = Field(description="Current operational capacity: Optimal, Strained, or Critical")
+    supply_chain_impact: str = Field(description="Impact on supply chain and logistics")
+    operational_risks: List[str] = Field(description="List of specific operational bottlenecks")
+    recommendation: str = Field(description="Strategic operations recommendation")
+
+class RiskComplianceAnalysis(BaseModel):
+    overall_risk_level: str = Field(description="Low, Medium, High, or Severe")
+    rule_violations: List[str] = Field(description="Potential regulatory or compliance violations")
+    mitigation_strategy: str = Field(description="Steps to mitigate the identified risks")
+    recommendation: str = Field(description="Strategic compliance recommendation")
+
+class ExecutiveDecision(BaseModel):
+    strategic_synthesis: str = Field(description="Brief synthesis of all departmental reports")
+    final_board_resolution: str = Field(description="The ultimate strategic decision resolving any department conflicts")
+    critical_actions: List[str] = Field(description="Top 3 immediate actions for the company to execute")
+
+
 # --- 3. UNIVERSAL FAILOVER ROUTER ---
 def call_llm_with_fallback(prompt: str, schema: Type[BaseModel], system_role: str) -> BaseModel:
     """Universal router that attempts Gemini first, falls back to Groq for ANY agent."""
     try:
         print(f"[LLM Router] Attempting Gemini for {schema.__name__}...")
         response = gemini_client.models.generate_content(
-            model="gemini-3.6-flash",
+            model="gemini-2.5-flash",
             contents=prompt,
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
@@ -47,10 +65,10 @@ def call_llm_with_fallback(prompt: str, schema: Type[BaseModel], system_role: st
 
     except Exception as e:
         print(f"\n[LLM Router WARNING] Gemini call failed: {e}")
-        print("[LLM Router] Switching to Fallback Provider: Groq (openai/gpt-oss-20b)...\n")
+        print("[LLM Router] Switching to Fallback Provider: Groq (openai/gpt-oss-120b)...\n")
         
         groq_response = groq_client.chat.completions.create(
-            model="openai/gpt-oss-20b",
+            model="openai/gpt-oss-120b",
             response_model=schema,
             messages=[
                 {"role": "system", "content": system_role},
@@ -59,6 +77,7 @@ def call_llm_with_fallback(prompt: str, schema: Type[BaseModel], system_role: st
         )
         print("[LLM Router] Success using Groq Fallback!")
         return groq_response
+
 
 # --- 4. AGENT NODES ---
 def market_agent_node(state: AgentState) -> dict:
@@ -77,3 +96,38 @@ def finance_agent_node(state: AgentState) -> dict:
     
     finance_data = call_llm_with_fallback(prompt, FinanceAnalysis, system_role)
     return {"finance_output": finance_data.model_dump()}
+
+def operations_agent_node(state: AgentState) -> dict:
+    prompt = (
+        f"Analyze the operational and supply chain impact for this scenario: {state['scenario_input']}. "
+        f"Crisis event context: {state.get('crisis_event', 'None')}"
+    )
+    system_role = "You are an expert Chief Operating Officer (COO). Assess capacity and supply chain logistics. Output valid JSON."
+    
+    ops_data = call_llm_with_fallback(prompt, OperationsAnalysis, system_role)
+    return {"operations_output": ops_data.model_dump()}
+
+def risk_agent_node(state: AgentState) -> dict:
+    prompt = (
+        f"Analyze the regulatory, legal, and overall business risks for this scenario: {state['scenario_input']}. "
+        f"Crisis event context: {state.get('crisis_event', 'None')}"
+    )
+    system_role = "You are an expert Chief Compliance Officer (CCO). Assess legal and regulatory risks. Output valid JSON."
+    
+    risk_data = call_llm_with_fallback(prompt, RiskComplianceAnalysis, system_role)
+    return {"risk_output": risk_data.model_dump()}
+
+def executive_agent_node(state: AgentState) -> dict:
+    prompt = (
+        f"Scenario: {state['scenario_input']}\n"
+        f"Crisis Event: {state.get('crisis_event', 'None')}\n\n"
+        f"Market Dept: {state.get('market_output')}\n"
+        f"Finance Dept: {state.get('finance_output')}\n"
+        f"Operations Dept: {state.get('operations_output')}\n"
+        f"Risk Dept: {state.get('risk_output')}\n\n"
+        "As the CEO, synthesize these reports, resolve any conflicting advice, and output a final strategic resolution."
+    )
+    system_role = "You are the CEO of a Fortune 500 company. Output valid JSON."
+    
+    exec_data = call_llm_with_fallback(prompt, ExecutiveDecision, system_role)
+    return {"executive_decision": exec_data.model_dump()}
