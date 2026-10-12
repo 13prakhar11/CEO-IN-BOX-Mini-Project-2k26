@@ -43,6 +43,12 @@ class ExecutiveDecision(BaseModel):
     final_board_resolution: str = Field(description="The ultimate strategic decision resolving any department conflicts")
     critical_actions: List[str] = Field(description="Top 3 immediate actions for the company to execute")
 
+class EvaluationReport(BaseModel):
+    faithfulness_score: float = Field(description="Score from 0.0 to 1.0 indicating if CEO's decision uses only factual department outputs without hallucinations.")
+    conflict_resolution_score: float = Field(description="Score from 0.0 to 1.0 indicating if department conflicts were successfully resolved.")
+    verdict: str = Field(description="Must be 'PASSED' or 'NEEDS_REVISION'")
+    evaluation_summary: str = Field(description="Detailed explanation justifying the scores")
+
 
 # --- 3. UNIVERSAL FAILOVER ROUTER ---
 def call_llm_with_fallback(prompt: str, schema: Type[BaseModel], system_role: str) -> BaseModel:
@@ -91,6 +97,7 @@ def finance_agent_node(state: AgentState) -> dict:
     prompt = (
         f"Analyze the financial impact and budget constraints for this business scenario: {state['scenario_input']}. "
         f"Consider any crisis events if applicable: {state.get('crisis_event', 'None')}"
+        f"Specific Board Question: {state.get('user_query', 'N/A')}\n"
     )
     system_role = "You are an expert Chief Financial Officer (CFO). Assess financial risks and output valid JSON."
     
@@ -101,6 +108,7 @@ def operations_agent_node(state: AgentState) -> dict:
     prompt = (
         f"Analyze the operational and supply chain impact for this scenario: {state['scenario_input']}. "
         f"Crisis event context: {state.get('crisis_event', 'None')}"
+        f"Specific Board Question: {state.get('user_query', 'N/A')}\n"
     )
     system_role = "You are an expert Chief Operating Officer (COO). Assess capacity and supply chain logistics. Output valid JSON."
     
@@ -111,6 +119,7 @@ def risk_agent_node(state: AgentState) -> dict:
     prompt = (
         f"Analyze the regulatory, legal, and overall business risks for this scenario: {state['scenario_input']}. "
         f"Crisis event context: {state.get('crisis_event', 'None')}"
+        f"Specific Board Question: {state.get('user_query', 'N/A')}\n"
     )
     system_role = "You are an expert Chief Compliance Officer (CCO). Assess legal and regulatory risks. Output valid JSON."
     
@@ -125,9 +134,31 @@ def executive_agent_node(state: AgentState) -> dict:
         f"Finance Dept: {state.get('finance_output')}\n"
         f"Operations Dept: {state.get('operations_output')}\n"
         f"Risk Dept: {state.get('risk_output')}\n\n"
+        f"Specific Board Question: {state.get('user_query', 'N/A')}\n\n"
         "As the CEO, synthesize these reports, resolve any conflicting advice, and output a final strategic resolution."
     )
     system_role = "You are the CEO of a Fortune 500 company. Output valid JSON."
     
     exec_data = call_llm_with_fallback(prompt, ExecutiveDecision, system_role)
     return {"executive_decision": exec_data.model_dump()}
+
+def evaluator_agent_node(state: AgentState) -> dict:
+    prompt = (
+        f"Original Scenario: {state['scenario_input']}\n"
+        f"Crisis Event: {state.get('crisis_event', 'None')}\n\n"
+        f"Specialist Department Outputs:\n"
+        f"- Market: {state.get('market_output')}\n"
+        f"- Finance: {state.get('finance_output')}\n"
+        f"- Operations: {state.get('operations_output')}\n"
+        f"- Risk: {state.get('risk_output')}\n\n"
+        f"CEO Executive Decision to Audit:\n"
+        f"{state.get('executive_decision')}\n\n"
+        "Audit the CEO's executive decision against the department data. Verify:\n"
+        "1. Faithfulness: Are all financial numbers, timelines, and risks grounded directly in department reports?\n"
+        "2. Conflict Resolution: Did the CEO address conflicting goals between departments?\n"
+        "Output your score and verdict."
+    )
+    system_role = "You are an independent Corporate Governance Auditor. Grade decisions strictly and output valid JSON."
+    
+    eval_data = call_llm_with_fallback(prompt, EvaluationReport, system_role)
+    return {"evaluation_report": eval_data.model_dump()}

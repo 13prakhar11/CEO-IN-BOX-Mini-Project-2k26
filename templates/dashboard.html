@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+    /* CSS Classes to prevent VS Code linting errors */
+    .dashboard-layout {
+        display: grid;
+        grid-template-columns: 350px 1fr;
+        gap: 20px;
+    }
+    .verdict-passed {
+        color: #16a34a; /* Green */
+        font-weight: bold;
+    }
+    .verdict-failed {
+        color: #dc2626; /* Red */
+        font-weight: bold;
+    }
+    .resolution-box {
+        font-size: 14px;
+        background: #f8fafc;
+        padding: 15px;
+        border: 1px solid var(--border);
+        margin-bottom: 20px;
+    }
+    .metrics-container {
+        border-top: 1px solid var(--border);
+        padding-top: 15px;
+        display: flex;
+        gap: 30px;
+    }
+</style>
+
+<div class="page-header">
+    <h1 class="page-title">Executive Crisis Simulator</h1>
+</div>
+
+<div class="dashboard-layout">
+    <!-- Input Form Section -->
+    <div class="card">
+        <form method="POST">
+            <label>Market Scenario</label>
+            <textarea name="scenario" rows="3" placeholder="Enter scenario..." required></textarea>
+            
+            <label>Crisis Event</label>
+            <textarea name="crisis" rows="3" placeholder="Enter crisis..." required></textarea>
+            
+            <label>Specific Board Query</label>
+            <textarea name="user_query" rows="2" placeholder="Ask the board a specific question..." required></textarea>
+            
+            <label>Session Tracking ID</label>
+            <input type="text" name="session_id" value="SESS_003" required>
+            
+            <button type="submit" style="width: 100%;">Execute AI Orchestration</button>
+        </form>
+    </div>
+
+    <!-- AI Output Section -->
+    <div class="card">
+        {% if result %}
+            <h3 style="font-size: 15px; margin-bottom: 10px; color: var(--primary);">Final Board Resolution</h3>
+            <p class="resolution-box">
+                {{ result.decision.final_board_resolution }}
+            </p>
+            
+            <h3 style="font-size: 15px; margin-bottom: 10px;">Critical Actions</h3>
+            <ul style="font-size: 13px; padding-left: 20px; margin-bottom: 20px; line-height: 1.8;">
+                {% for action in result.decision.critical_actions %}
+                    <li>{{ action }}</li>
+                {% endfor %}
+            </ul>
+
+            <div class="metrics-container">
+                <div>
+                    <label>Audit Verdict</label>
+                    {% set verdict_class = 'verdict-passed' if result.audit.verdict == 'PASSED' else 'verdict-failed' %}
+                    <span class="{{ verdict_class }}">{{ result.audit.verdict }}</span>
+                </div>
+                <div>
+                    <label>Faithfulness</label>
+                    <strong>{{ "%.0f"|format(result.audit.faithfulness_score * 100) }}%</strong>
+                </div>
+            </div>
+        {% else %}
+            <div style="text-align: center; color: var(--text-muted); padding: 50px;">
+                System ready. Awaiting parameters.
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
