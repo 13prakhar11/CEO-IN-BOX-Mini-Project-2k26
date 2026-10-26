@@ -1,25 +1,25 @@
 {% extends "base.html" %}
 {% block content %}
 <div style="max-width: 400px; margin: 100px auto;">
-    <div class="card">
-        <h2 style="margin-bottom: 20px; font-size: 18px;">System Authentication</h2>
+    <div class="surface-card">
+        <h2 style="margin-bottom: 24px; font-size: 20px; font-weight: 600; text-align: center; letter-spacing: -0.5px;">System Authentication</h2>
         
         {% with messages = get_flashed_messages() %}
           {% if messages %}
-            <div style="background: #fef2f2; color: #991b1b; padding: 10px; border: 1px solid #fecaca; border-radius: 4px; margin-bottom: 15px; font-size: 13px;">
+            <div style="background: #fef2f2; color: var(--status-fail); padding: 12px; border: 1px solid #fecaca; border-radius: 6px; margin-bottom: 20px; font-size: 13px; text-align: center; font-weight: 500;">
               {{ messages[0] }}
             </div>
           {% endif %}
         {% endwith %}
 
         <form method="POST">
-            <label>Admin Username</label>
-            <input type="text" name="username" required>
+            <label class="input-label">Admin Username</label>
+            <input type="text" name="username" class="text-input" required>
             
-            <label>Password</label>
-            <input type="password" name="password" required>
+            <label class="input-label">Password</label>
+            <input type="password" name="password" class="text-input" required>
             
-            <button type="submit" style="width: 100%;">Authorize Access</button>
+            <button type="submit" class="btn-primary">Authorize Access</button>
         </form>
     </div>
 </div>

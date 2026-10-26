@@ -162,3 +162,49 @@ def evaluator_agent_node(state: AgentState) -> dict:
     
     eval_data = call_llm_with_fallback(prompt, EvaluationReport, system_role)
     return {"evaluation_report": eval_data.model_dump()}
+
+from langgraph.graph import StateGraph, START, END
+from langgraph.checkpoint.sqlite import SqliteSaver
+import sqlite3
+
+# ==========================================
+# GRAPH ORCHESTRATION & ROUTING
+# ==========================================
+
+# 1. Initialize the SQLite permanent memory checkpointer
+conn = sqlite3.connect("auto_ceo_memory.sqlite", check_same_thread=False)
+memory = SqliteSaver(conn)
+
+# 2. Initialize the graph using your AgentState schema
+builder = StateGraph(AgentState)
+
+# 3. Add all your specialist and executive nodes to the graph
+# (Ensure these string names match your actual function names above)
+builder.add_node("market", market_agent_node)
+builder.add_node("finance", finance_agent_node)
+builder.add_node("operations", operations_agent_node)
+builder.add_node("risk", risk_agent_node)
+builder.add_node("executive", executive_agent_node)
+builder.add_node("evaluator", evaluator_agent_node)
+
+# 4. Define the Parallel Flow (Edges)
+# FAN-OUT: The START node sends the crisis to all 4 departments at the same time
+builder.add_edge(START, "market")
+builder.add_edge(START, "finance")
+builder.add_edge(START, "operations")
+builder.add_edge(START, "risk")
+
+# FAN-IN: All 4 departments must finish before passing data to the CEO
+builder.add_edge("market", "executive")
+builder.add_edge("finance", "executive")
+builder.add_edge("operations", "executive")
+builder.add_edge("risk", "executive")
+
+# CEO passes the final resolution to the Auditor for scoring
+builder.add_edge("executive", "evaluator")
+
+# Auditor finishes the pipeline
+builder.add_edge("evaluator", END)
+
+# 5. Compile the entire network into the variable app.py is looking for
+auto_ceo_graph = builder.compile(checkpointer=memory)

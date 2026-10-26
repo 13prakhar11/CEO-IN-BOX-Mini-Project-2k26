@@ -1,88 +1,151 @@
 {% extends "base.html" %}
 {% block content %}
 <style>
-    /* CSS Classes to prevent VS Code linting errors */
-    .dashboard-layout {
-        display: grid;
-        grid-template-columns: 350px 1fr;
-        gap: 20px;
-    }
-    .verdict-passed {
-        color: #16a34a; /* Green */
-        font-weight: bold;
-    }
-    .verdict-failed {
-        color: #dc2626; /* Red */
-        font-weight: bold;
-    }
+    .dashboard-layout { display: grid; grid-template-columns: 400px 1fr; gap: 40px; align-items: start; }
+    
     .resolution-box {
-        font-size: 14px;
-        background: #f8fafc;
-        padding: 15px;
+        background: linear-gradient(145deg, rgba(28, 37, 56, 0.9), rgba(19, 27, 44, 0.9));
         border: 1px solid var(--border);
-        margin-bottom: 20px;
+        border-left: 4px solid var(--primary);
+        padding: 24px;
+        border-radius: 8px;
+        font-size: 16px;
+        line-height: 1.7;
+        margin-bottom: 40px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
     }
-    .metrics-container {
-        border-top: 1px solid var(--border);
-        padding-top: 15px;
-        display: flex;
-        gap: 30px;
+
+    .intel-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 40px; }
+    
+    .intel-card {
+        background: var(--bg-input);
+        padding: 20px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+        position: relative;
+        overflow: hidden;
     }
+    
+    /* Interactive Hover Lift */
+    .intel-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 30px rgba(0,0,0,0.3);
+    }
+
+    /* Vibrant Department Accents */
+    .intel-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+    .card-finance::before { background: var(--primary); }
+    .card-finance:hover { border-color: var(--primary); }
+    
+    .card-risk::before { background: var(--danger); }
+    .card-risk:hover { border-color: var(--danger); }
+    
+    .card-ops::before { background: var(--warning); }
+    .card-ops:hover { border-color: var(--warning); }
+    
+    .card-market::before { background: var(--success); }
+    .card-market:hover { border-color: var(--success); }
+
+    .dept-title { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; }
+    .kv-pair { font-size: 14px; margin-bottom: 10px; line-height: 1.5; color: var(--text-muted); }
+    .kv-key { font-weight: 600; color: var(--text-main); }
+
+    .audit-panel {
+        display: flex; gap: 50px; background: rgba(0,0,0,0.2); padding: 30px; border-radius: 12px; border: 1px solid var(--border);
+    }
+    .metric-value { font-size: 32px; font-weight: 800; margin-top: 8px; letter-spacing: -1px; }
+    .text-pass { color: var(--success); text-shadow: 0 0 15px rgba(16, 185, 129, 0.4); }
+    .text-fail { color: var(--danger); text-shadow: 0 0 15px rgba(239, 68, 68, 0.4); }
 </style>
 
-<div class="page-header">
-    <h1 class="page-title">Executive Crisis Simulator</h1>
-</div>
+<h1 class="page-title">Executive Boardroom</h1>
 
 <div class="dashboard-layout">
-    <!-- Input Form Section -->
-    <div class="card">
+    <!-- Input Form -->
+    <div class="glass-card">
         <form method="POST">
-            <label>Market Scenario</label>
-            <textarea name="scenario" rows="3" placeholder="Enter scenario..." required></textarea>
+            <label class="input-label">Market Scenario</label>
+            <textarea class="text-input" name="scenario" rows="4" placeholder="Enter the macroeconomic context..." required></textarea>
             
-            <label>Crisis Event</label>
-            <textarea name="crisis" rows="3" placeholder="Enter crisis..." required></textarea>
+            <label class="input-label">Crisis Event</label>
+            <textarea class="text-input" name="crisis" rows="4" placeholder="Enter the trigger event..." required></textarea>
             
-            <label>Specific Board Query</label>
-            <textarea name="user_query" rows="2" placeholder="Ask the board a specific question..." required></textarea>
+            <label class="input-label">Board Query</label>
+            <textarea class="text-input" name="user_query" rows="2" placeholder="What is the strategic dilemma?" required></textarea>
             
-            <label>Session Tracking ID</label>
-            <input type="text" name="session_id" value="SESS_003" required>
+            <label class="input-label">Session ID</label>
+            <input class="text-input" type="text" name="session_id" value="SESS_005" required>
             
-            <button type="submit" style="width: 100%;">Execute AI Orchestration</button>
+            <button type="submit" class="btn-primary">Initialize AI Synthesis</button>
         </form>
     </div>
 
-    <!-- AI Output Section -->
-    <div class="card">
+    <!-- AI Output -->
+    <div class="glass-card">
         {% if result %}
-            <h3 style="font-size: 15px; margin-bottom: 10px; color: var(--primary);">Final Board Resolution</h3>
-            <p class="resolution-box">
+            <h3 class="input-label" style="color: var(--primary);">CEO Strategic Resolution</h3>
+            <div class="resolution-box">
                 {{ result.decision.final_board_resolution }}
-            </p>
+            </div>
             
-            <h3 style="font-size: 15px; margin-bottom: 10px;">Critical Actions</h3>
-            <ul style="font-size: 13px; padding-left: 20px; margin-bottom: 20px; line-height: 1.8;">
-                {% for action in result.decision.critical_actions %}
-                    <li>{{ action }}</li>
-                {% endfor %}
-            </ul>
+            <h3 class="input-label">Agent Intelligence Network</h3>
+            <div class="intel-grid">
+                
+                <!-- Finance -->
+                <div class="intel-card card-finance">
+                    <div class="dept-title" style="color: var(--primary);">Finance Node</div>
+                    {% for key, value in result.finance.items() %}
+                        <div class="kv-pair"><span class="kv-key">{{ key|replace('_', ' ')|title }}</span>: {{ value }}</div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Risk -->
+                <div class="intel-card card-risk">
+                    <div class="dept-title" style="color: var(--danger);">Risk Node</div>
+                    {% for key, value in result.risk.items() %}
+                        <div class="kv-pair"><span class="kv-key">{{ key|replace('_', ' ')|title }}</span>: {{ value }}</div>
+                    {% endfor %}
+                </div>
 
-            <div class="metrics-container">
+                <!-- Operations -->
+                <div class="intel-card card-ops">
+                    <div class="dept-title" style="color: var(--warning);">Operations Node</div>
+                    {% for key, value in result.operations.items() %}
+                        <div class="kv-pair"><span class="kv-key">{{ key|replace('_', ' ')|title }}</span>: {{ value }}</div>
+                    {% endfor %}
+                </div>
+
+                <!-- Market -->
+                <div class="intel-card card-market">
+                    <div class="dept-title" style="color: var(--success);">Market Node</div>
+                    {% for key, value in result.market.items() %}
+                        <div class="kv-pair"><span class="kv-key">{{ key|replace('_', ' ')|title }}</span>: {{ value }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <h3 class="input-label">System Audit (LLM-as-a-Judge)</h3>
+            <div class="audit-panel">
                 <div>
-                    <label>Audit Verdict</label>
-                    {% set verdict_class = 'verdict-passed' if result.audit.verdict == 'PASSED' else 'verdict-failed' %}
-                    <span class="{{ verdict_class }}">{{ result.audit.verdict }}</span>
+                    <div class="input-label">Final Verdict</div>
+                    {% set v_class = 'text-pass' if result.audit.verdict == 'PASSED' else 'text-fail' %}
+                    <div class="metric-value {{ v_class }}">{{ result.audit.verdict }}</div>
                 </div>
                 <div>
-                    <label>Faithfulness</label>
-                    <strong>{{ "%.0f"|format(result.audit.faithfulness_score * 100) }}%</strong>
+                    <div class="input-label">Data Faithfulness</div>
+                    <div class="metric-value">{{ "%.0f"|format(result.audit.faithfulness_score * 100) }}%</div>
                 </div>
             </div>
         {% else %}
-            <div style="text-align: center; color: var(--text-muted); padding: 50px;">
-                System ready. Awaiting parameters.
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; min-height: 400px; color: var(--border);">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="margin-bottom: 20px;">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M12 16v-4"></path>
+                    <path d="M12 8h.01"></path>
+                </svg>
+                <h3 style="font-size: 18px; color: var(--text-muted); margin-bottom: 8px;">System on Standby</h3>
+                <p style="font-size: 14px; color: var(--border);">Inject scenario data to activate the agent network.</p>
             </div>
         {% endif %}
     </div>
