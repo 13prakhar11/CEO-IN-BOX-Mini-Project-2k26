@@ -1,11 +1,5 @@
-# Virtual Environment
-venv/
-env/
-__pycache__/
-
-# Local Databases
-*.sqlite
-*.db
-
-# Environment Variables
 .env
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+__pycache__/
